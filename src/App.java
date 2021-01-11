@@ -1,5 +1,7 @@
+import javax.swing.*;
+
 public class App {
-    public static void main(String[] args) throws Exception {
-        System.out.println("Hello");
+    public static void main(String[] args) {
+        Game game = new Game();
     }
 }
