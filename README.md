@@ -8,4 +8,7 @@ Rules:
 
 This project is implemented in Java, utilizing its Graphical User Interface and Object Oriented Paradigm. The game hyperparameters are configurable, but not designed to be controllable from user directly.
 
-Demo play:
+Demo play: https://github.com/JessicaSS7/Blokus/blob/master/demo.mov
+
+Screenshot: https://github.com/JessicaSS7/Blokus/blob/master/screenshot.png
+
