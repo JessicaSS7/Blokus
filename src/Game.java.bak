@@ -1,0 +1,519 @@
+import javax.swing.*;
+
+import java.awt.Color;
+import java.awt.event.*;
+import java.util.*;
+
+public class Game {
+    private JFrame frame;
+    private JPanel centerpanel;
+    private List<ArrayList<JButton>> buttons;
+    private List<ArrayList<JButton>> ShapeBoard;
+    private List<ArrayList<JButton>> PendingBoard;
+    private List<Pair> dirs;
+    private JButton flip, rotate;
+    private Shape ActiveShape;
+    private int score;
+    private JLabel ScoreMessage;
+    public static int marginx = 500;
+    public static int marginy = 150;
+    public static int block_size = 20;
+    public static int dim = 20;
+
+    Game() {
+        buttons = new ArrayList<>();
+        ShapeBoard = new ArrayList<>();
+        dirs = new ArrayList<Pair>() {
+            {
+                add(new Pair(0, 0));
+                add(new Pair(1, 0));
+                add(new Pair(-1, 0));
+                add(new Pair(0, 1));
+                add(new Pair(0, -1));
+            }
+        };
+        score = 0;
+        PendingBoard = new ArrayList<>();
+        frame = new JFrame("Blokus");
+        centerpanel = new JPanel();
+        centerpanel.setLayout(null);
+        InitializeScoreMessage();
+        InitialBoard();
+        InitialShapeBoard();
+        InitialPendingBoard();
+        InitialOperationButtons();
+        PaintShapeBoard();
+        PaintNeighbor();
+        UpdateScoreBoard();
+        frame.add(centerpanel);
+        frame.pack();
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(2000, 2000);
+        frame.setVisible(true);
+    }
+
+    private void CycleButtons(ArrayList<JButton> buttons) {
+        if (buttons.isEmpty()) {
+            System.err.println("Empty buttons for cycling");
+            return;
+        }
+        Color tmp = buttons.get(buttons.size() - 1).getBackground();
+        for (int i = buttons.size() - 1; i > 0; --i) {
+            buttons.get(i).setBackground(buttons.get(i - 1).getBackground());
+        }
+        buttons.get(0).setBackground(tmp);
+    }
+
+    private void InitialOperationButtons() {
+        flip = new JButton("Flip");
+        flip.setBounds(10, 450, 50, 50);
+        flip.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                for (int i = 0; i < 5; ++i) {
+                    for (int j = 0; j < 4 - j; ++j) {
+                        JButton button1 = PendingBoard.get(i).get(j);
+                        JButton button2 = PendingBoard.get(i).get(4 - j);
+                        Color tmp_background = button1.getBackground();
+                        button1.setBackground(button2.getBackground());
+                        button2.setBackground(tmp_background);
+                    }
+                }
+            }
+        });
+        rotate = new JButton("Rotate Clockwisely");
+        rotate.setBounds(70, 450, 150, 50);
+        rotate.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                for (int i = 0; i < 3; ++i) {
+                    for (int j = 0; j < 2; ++j) {
+                        ArrayList<JButton> button_chain = new ArrayList<JButton>();
+                        button_chain.add(PendingBoard.get(i).get(j));
+                        button_chain.add(PendingBoard.get(j).get(4 - i));
+                        button_chain.add(PendingBoard.get(4 - i).get(4 - j));
+                        button_chain.add(PendingBoard.get(4 - j).get(i));
+                        CycleButtons(button_chain);
+                    }
+                }
+            }
+        });
+        centerpanel.add(flip);
+        centerpanel.add(rotate);
+    }
+
+    private void InitializeScoreMessage() {
+        ScoreMessage = new JLabel("Total penalty: 1000");
+        ScoreMessage.setSize(ScoreMessage.getPreferredSize());
+        ScoreMessage.setLocation(50,20);
+        centerpanel.add(ScoreMessage);
+        centerpanel.validate();
+    }
+
+    private void InitialBoard() {
+        for (int i = 0; i < dim; ++i) {
+            ArrayList<JButton> row = new ArrayList<JButton>();
+            for (int j = 0; j < dim; ++j) {
+                JButton button = new JButton();
+                button.setBounds(marginx + j * block_size, marginy + i * block_size, block_size, block_size);
+                button.setBackground(Color.white);
+                button.setOpaque(true);
+                button.setBorderPainted(true);
+                row.add(button);
+                centerpanel.add(button);
+            }
+            buttons.add(row);
+        }
+    }
+
+    private void InitialShapeBoard() {
+        for (int i = 0; i < 17; ++i) {
+            ArrayList<JButton> row = new ArrayList<JButton>();
+            for (int j = 0; j < 17; ++j) {
+                JButton button = new JButton();
+                button.setBounds(100 + j * block_size, 100 + i * block_size, block_size, block_size);
+                button.setOpaque(true);
+                button.setBorderPainted(true);
+                row.add(button);
+                centerpanel.add(button);
+            }
+            ShapeBoard.add(row);
+        }
+    }
+
+    private void ClearPendingBoard() {
+        for (int i = 0; i < 5; ++i) {
+            for (int j = 0; j < 5; ++j) {
+                JButton button = PendingBoard.get(i).get(j);
+                button.setBackground(Color.white);
+            }
+        }
+    }
+
+    private void UpdateScoreBoard() {
+        score = 0;
+        for (int i = 0; i < 17; ++i) {
+            for (int j = 0; j < 17; ++j) {
+                if (ShapeBoard.get(i).get(j).getBackground() == Color.blue) {
+                    ++score;
+                }
+            }
+        }
+        ScoreMessage.setText("Total penalty: " + score);
+    }
+
+    private void InitialPendingBoard() {
+        for (int i = 0; i < 5; ++i) {
+            ArrayList<JButton> row = new ArrayList<JButton>();
+            for (int j = 0; j < 5; ++j) {
+                JButton button = new JButton();
+                button.setBounds(100 + j * block_size, 500 + i * block_size, block_size, block_size);
+                button.setBackground(Color.white);
+                button.setOpaque(true);
+                button.setBorderPainted(false);
+                row.add(button);
+                centerpanel.add(button);
+            }
+            PendingBoard.add(row);
+        }
+    }
+
+    private void PaintNeighbor() {
+        for (int i = 0; i < dim; ++i) {
+            for (int j = 0; j < dim; ++j) {
+                final Integer ii = Integer.valueOf(i);
+                final Integer jj = Integer.valueOf(j);
+                // When mouse hovers on a button, show the preview.
+                // When mouse exits, clear that preview.
+                buttons.get(i).get(j).addMouseListener(new MouseAdapter() {
+                    public void mouseExited(MouseEvent e) {
+                        // On mouse exit, change all gray previews to opaque.
+                        for (int di = -2; di <= 2; ++di) {
+                            for (int dj = -2; dj <= 2; ++dj) {
+                                int newi = ii + di;
+                                int newj = jj + dj;
+                                if (0 <= newi && newi < dim && 0 <= newj && newj < dim) {
+                                    JButton b = buttons.get(newi).get(newj);
+                                    if (b.getBackground() == Color.gray || b.getBackground() == Color.cyan) {
+                                        b.setBackground(Color.white);
+                                        b.setOpaque(true);
+                                        b.setBorderPainted(true);
+                                    } else if (b.getBackground() == Color.red) {
+                                        b.setBackground(Color.blue);
+                                        b.setBorderPainted(false);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    public void mouseEntered(MouseEvent e) {
+                        List<Pair> neighbor = new ArrayList<>();
+                        for (int i2 = 0; i2 < 5; ++i2) {
+                            for (int j2 = 0; j2 < 5; ++j2) {
+                                if (PendingBoard.get(i2).get(j2).getBackground() == Color.blue) {
+                                    neighbor.add(new Pair(i2 - 2, j2 - 2));
+                                }
+                            }
+                        }
+                        boolean has_violation = false;
+                        for (Pair n : neighbor) {
+                            int newi = ii + n.getKey();
+                            int newj = jj + n.getValue();
+                            if (0 <= newi && newi < dim && 0 <= newj && newj < dim) {
+                                // Checks if any of the four neighbor directions is already taken.
+                                for (Pair p : dirs) {
+                                    int neighbori = newi + p.getKey();
+                                    int neighborj = newj + p.getValue();
+                                    if (0 <= neighbori && neighbori < dim && 0 <= neighborj && neighborj < dim
+                                            && buttons.get(neighbori).get(neighborj).getBackground() == Color.blue) {
+                                        has_violation = true;
+                                    }
+                                }
+                            } else {
+                                has_violation = true;
+                                break;
+                            }
+                        }
+                        for (Pair n : neighbor) {
+                            int newi = ii + n.getKey();
+                            int newj = jj + n.getValue();
+                            if (0 <= newi && newi < dim && 0 <= newj && newj < dim) {
+                                JButton b = buttons.get(newi).get(newj);
+                                if (b.getBackground() != Color.blue) {
+                                    b.setBackground(has_violation ? Color.gray : Color.cyan);
+                                    b.setBorderPainted(false);
+                                } else {
+                                    b.setBackground(Color.red);
+                                    b.setBorderPainted(false);
+                                }
+                            }
+                        }
+                    }
+                });
+                // When mouse clicks a button, commit the change unless there is violation.
+                buttons.get(i).get(j).addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                        List<Pair> neighbor = new ArrayList<>();
+                        for (int i2 = 0; i2 < 5; ++i2) {
+                            for (int j2 = 0; j2 < 5; ++j2) {
+                                if (PendingBoard.get(i2).get(j2).getBackground() == Color.blue) {
+                                    neighbor.add(new Pair(i2 - 2, j2 - 2));
+                                }
+                            }
+                        }
+                        boolean has_violation = false;
+                        for (Pair n : neighbor) {
+                            int newi = ii + n.getKey();
+                            int newj = jj + n.getValue();
+                            if (0 <= newi && newi < dim && 0 <= newj && newj < dim) {
+                                // Checks if any of the four neighbor directions is already taken.
+                                for (Pair p : dirs) {
+                                    if (buttons.get(newi + p.getKey()).get(newj + p.getValue())
+                                            .getBackground() == Color.blue) {
+                                        has_violation = true;
+                                    }
+                                }
+                            } else {
+                                has_violation = true;
+                                break;
+                            }
+                        }
+                        if (has_violation) {
+                            return;
+                        }
+                        for (Pair n : neighbor) {
+                            int newi = ii + n.getKey();
+                            int newj = jj + n.getValue();
+                            if (0 <= newi && newi < dim && 0 <= newj && newj < dim) {
+                                JButton b = buttons.get(newi).get(newj);
+                                b.setBackground(Color.blue);
+                                b.setBorderPainted(false);
+                            }
+                        }
+                        // Removes this shape from both the pending board and the shape board.
+                        ClearPendingBoard();
+                        for (Pair p : ActiveShape.neighbor) {
+                            int x = ActiveShape.i + p.getKey();
+                            int y = ActiveShape.j + p.getValue();
+                            JButton b = ShapeBoard.get(y).get(x);
+                            b.setBackground(Color.white);
+                            b.setBorderPainted(true);
+                        }
+                        // Updates the score board.
+                        UpdateScoreBoard();
+                    }
+                });
+            }
+        }
+    }
+
+    private void PaintShapeBoard() {
+        ArrayList<Shape> shapes = new ArrayList<Shape>();
+        shapes.add(new Shape(2, 0, new ArrayList<Pair>() {
+            {
+                add(new Pair(-2, 0));
+                add(new Pair(-1, 0));
+                add(new Pair(0, 0));
+                add(new Pair(1, 0));
+                add(new Pair(2, 0));
+            }
+        }));
+        shapes.add(new Shape(8, 0, new ArrayList<Pair>() {
+            {
+                add(new Pair(-2, 0));
+                add(new Pair(-1, 0));
+                add(new Pair(0, 0));
+                add(new Pair(1, 0));
+                add(new Pair(1, 1));
+            }
+        }));
+        shapes.add(new Shape(13, 0, new ArrayList<Pair>() {
+            {
+                add(new Pair(-2, 0));
+                add(new Pair(-1, 0));
+                add(new Pair(0, 0));
+                add(new Pair(1, 0));
+                add(new Pair(0, 1));
+            }
+        }));
+        shapes.add(new Shape(0, 4, new ArrayList<Pair>() {
+            {
+                add(new Pair(0, -2));
+                add(new Pair(0, -1));
+                add(new Pair(0, 0));
+                add(new Pair(1, 0));
+            }
+        }));
+        shapes.add(new Shape(3, 2, new ArrayList<Pair>() {
+            {
+                add(new Pair(0, 0));
+                add(new Pair(0, 1));
+                add(new Pair(0, 2));
+                add(new Pair(1, 0));
+                add(new Pair(1, 1));
+            }
+        }));
+        shapes.add(new Shape(6, 4, new ArrayList<Pair>() {
+            {
+                add(new Pair(0, -2));
+                add(new Pair(0, -1));
+                add(new Pair(0, 0));
+                add(new Pair(1, 0));
+                add(new Pair(2, 0));
+            }
+        }));
+        shapes.add(new Shape(11, 2, new ArrayList<Pair>() {
+            {
+                add(new Pair(-1, 0));
+                add(new Pair(0, 0));
+                add(new Pair(0, 1));
+                add(new Pair(0, 2));
+                add(new Pair(1, 2));
+            }
+        }));
+        shapes.add(new Shape(15, 3, new ArrayList<Pair>() {
+            {
+                add(new Pair(-1, 0));
+                add(new Pair(1, 0));
+                add(new Pair(0, 1));
+                add(new Pair(0, -1));
+                add(new Pair(0, 0));
+            }
+        }));
+        shapes.add(new Shape(0, 6, new ArrayList<Pair>() {
+            {
+                add(new Pair(0, 0));
+                add(new Pair(0, 1));
+                add(new Pair(0,2));
+                add(new Pair(1, 1));
+            }
+        }));
+        shapes.add(new Shape(3, 6, new ArrayList<Pair>() {
+            {
+                add(new Pair(0, 0));
+                add(new Pair(1,0));
+                add(new Pair(0,1));
+                add(new Pair(0,2));
+                add(new Pair(1,2));
+
+            }
+        }));
+        shapes.add(new Shape(6, 6, new ArrayList<Pair>() {
+            {
+                add(new Pair(0, 0));
+                add(new Pair(0,1));
+                add(new Pair(1,1));
+                add(new Pair(1,2));
+                add(new Pair(2,2));
+
+            }
+        }));
+        shapes.add(new Shape(11, 6, new ArrayList<Pair>() {
+            {
+                add(new Pair(0, 0));
+                add(new Pair(1,0));
+                add(new Pair(-1,0));
+                add(new Pair(0,1));
+                add(new Pair(0,2));
+
+            }
+        }));
+        shapes.add(new Shape(15, 6, new ArrayList<Pair>() {
+            {
+                add(new Pair(0, 0));
+                add(new Pair(-1,0));
+                add(new Pair(0,1));
+                add(new Pair(1,1));
+                add(new Pair(0,2));
+
+            }
+        }));
+        shapes.add(new Shape(0, 10, new ArrayList<Pair>() {
+            {
+                add(new Pair(0, 0));
+                add(new Pair(1,0));
+                add(new Pair(2,0));
+                add(new Pair(2,1));
+                add(new Pair(3,1));
+
+            }
+        }));
+        shapes.add(new Shape(5, 10, new ArrayList<Pair>() {
+            {
+                add(new Pair(0, 0));
+                add(new Pair(1,0));
+                add(new Pair(1,1));
+                add(new Pair(2,1));
+            }
+        }));
+        shapes.add(new Shape(9, 10, new ArrayList<Pair>() {
+            {
+                add(new Pair(0, 0));
+                add(new Pair(0,1));
+                add(new Pair(1,1));
+            }
+        }));
+        shapes.add(new Shape(12, 10, new ArrayList<Pair>() {
+            {
+                add(new Pair(0, 0));
+                add(new Pair(0,1));
+                add(new Pair(1,0));
+                add(new Pair(1,1));
+            }
+        }));
+        shapes.add(new Shape(15, 10, new ArrayList<Pair>() {
+            {
+                add(new Pair(0, 0));
+            }
+        }));
+        shapes.add(new Shape(0, 13, new ArrayList<Pair>() {
+            {
+                add(new Pair(0, 0));
+                add(new Pair(1, 0));
+                add(new Pair(2, 0));
+                add(new Pair(3, 0));
+                add(new Pair(4, 0));
+            }
+        }));
+        shapes.add(new Shape(0, 15, new ArrayList<Pair>() {
+            {
+                add(new Pair(0, 0));
+                add(new Pair(1, 0));
+                add(new Pair(2, 0));
+            }
+        }));
+        shapes.add(new Shape(4, 15, new ArrayList<Pair>() {
+            {
+                add(new Pair(0, 0));
+                add(new Pair(1, 0));
+            }
+        }));
+        for (Shape s : shapes) {
+            int cur_i = s.i;
+            int cur_j = s.j;
+            for (Pair p : s.neighbor) {
+                int x = cur_i + p.getKey();
+                int y = cur_j + p.getValue();
+                JButton b = ShapeBoard.get(y).get(x);
+                b.setBackground(Color.blue);
+                b.setBorderPainted(false);
+                b.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                        ActiveShape = s;
+                        for (int i = 0; i < 5; ++i) {
+                            for (int j = 0; j < 5; ++j) {
+                                PendingBoard.get(i).get(j).setBackground(Color.white);
+                            }
+                        }
+                        for (Pair p : s.neighbor) {
+                            int x = 2 + p.getKey();
+                            int y = 2 + p.getValue();
+                            JButton b = PendingBoard.get(y).get(x);
+                            b.setBackground(Color.blue);
+                            b.setBorderPainted(false);
+                        }
+                    }
+                });
+            }
+        }
+    }
+}
